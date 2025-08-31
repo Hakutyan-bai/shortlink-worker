@@ -1,11 +1,14 @@
+// Cloudflare Workers 短网址服务
+// 支持后台管理和在线添加/编辑功能
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
 
-    // 管理员密码 - 修改your_admin_password_here为你自己的密码
-    const ADMIN_PASSWORD = env.ADMIN_PASSWORD || 'your_admin_password_here';
+    // 管理员密码 - 从环境变量获取，提高安全性
+    const ADMIN_PASSWORD = env.ADMIN_PASSWORD || 'Fuwarisl123';
 
     // 处理管理后台
     if (path === '/admin' || path === '/admin/') {
@@ -32,7 +35,7 @@ export default {
 // 处理管理后台
 async function handleAdmin(request, env, adminPassword) {
   const url = new URL(request.url);
-
+  
   // 检查认证
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !isValidAuth(authHeader, adminPassword)) {
@@ -54,7 +57,7 @@ async function handleAdmin(request, env, adminPassword) {
 async function handleAPI(request, env, adminPassword) {
   const url = new URL(request.url);
   const path = url.pathname;
-
+  
   // 检查认证
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !isValidAuth(authHeader, adminPassword)) {
@@ -135,7 +138,7 @@ async function handleRedirect(request, env) {
   try {
     // 获取原始 URL
     const urlData = await env.URL_SHORTENER.get(`url:${code}`, 'json');
-
+    
     if (!urlData) {
       return new Response('Short URL not found', { status: 404 });
     }
@@ -145,7 +148,7 @@ async function handleRedirect(request, env) {
 
     // 重定向到原始 URL
     return Response.redirect(urlData.originalUrl, 302);
-
+    
   } catch (error) {
     return new Response('Error processing request', { status: 500 });
   }
@@ -171,7 +174,7 @@ async function createShortUrl(env, originalUrl, customCode = null, request) {
   }
 
   let shortCode = customCode;
-
+  
   // 如果没有自定义代码，生成随机代码
   if (!shortCode) {
     do {
@@ -194,7 +197,7 @@ async function createShortUrl(env, originalUrl, customCode = null, request) {
 
   // 保存到 KV 存储
   await env.URL_SHORTENER.put(`url:${shortCode}`, JSON.stringify(urlData));
-
+  
   // 添加到索引列表
   const urlList = await env.URL_SHORTENER.get('url_list', 'json') || [];
   urlList.push(shortCode);
@@ -229,7 +232,7 @@ async function getAllUrls(env) {
 // 删除短链
 async function deleteUrl(env, code) {
   await env.URL_SHORTENER.delete(`url:${code}`);
-
+  
   // 从索引列表中移除
   const urlList = await env.URL_SHORTENER.get('url_list', 'json') || [];
   const updatedList = urlList.filter(c => c !== code);
@@ -294,64 +297,232 @@ function getHomePage() {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>短网址服务</title>
     <style>
+        :root {
+            --primary: #0cffe1;
+            --secondary: #5271ff;
+            --accent: #ff2a6d;
+            --dark: #0a1128;
+            --darker: #050a1d;
+            --light: #d0fef5;
+            --card-bg: rgba(16, 18, 46, 0.7);
+            --glow: 0 0 10px var(--primary), 0 0 20px rgba(12, 255, 225, 0.3);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--darker);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(18, 44, 120, 0.5) 0%, transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(82, 113, 255, 0.4) 0%, transparent 25%),
+                radial-gradient(circle at 50% 80%, rgba(255, 42, 109, 0.3) 0%, transparent 25%);
+            color: #fff;
             min-height: 100vh;
-            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
+        
+        .cyber-border {
+            position: relative;
+            border: 1px solid var(--primary);
+            box-shadow: var(--glow);
+            border-radius: 15px;
+            background: var(--card-bg);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            width: 100%;
+            max-width: 700px;
+        }
+        
+        .cyber-border::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 6px;
+            border-top: 2px solid var(--primary);
+            border-left: 2px solid var(--primary);
+            box-shadow: var(--glow);
+        }
+        
+        .cyber-border::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 6px;
+            height: 6px;
+            border-bottom: 2px solid var(--primary);
+            border-right: 2px solid var(--primary);
+            box-shadow: var(--glow);
+        }
+        
         .container {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 50px 40px;
         }
+        
         h1 {
             text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-            font-weight: 300;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3em;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(12, 255, 225, 0.5);
+            margin-bottom: 20px;
+            letter-spacing: 1px;
         }
+        
         .subtitle {
             text-align: center;
-            color: #666;
-            margin-bottom: 40px;
-            font-size: 1.1em;
+            color: var(--light);
+            margin-bottom: 50px;
+            font-size: 1.2em;
+            opacity: 0.9;
         }
+        
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 40px;
+            gap: 25px;
+            margin-top: 50px;
         }
+        
         .feature {
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
             text-align: center;
+            border: 1px solid rgba(12, 255, 225, 0.2);
+            transition: all 0.3s ease;
         }
+        
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(12, 255, 225, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
         .feature h3 {
-            color: #667eea;
-            margin-bottom: 10px;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4em;
         }
+        
+        .feature p {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+        
         .admin-link {
             display: block;
             text-align: center;
-            margin-top: 30px;
-            padding: 15px 30px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
+            margin-top: 50px;
+            padding: 18px 40px;
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+            color: var(--darker);
             text-decoration: none;
             border-radius: 10px;
-            font-weight: 500;
-            transition: transform 0.2s;
+            font-weight: 600;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
         }
+        
+        .admin-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            transition: all 0.4s ease;
+            z-index: -1;
+        }
+        
         .admin-link:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(12, 255, 225, 0.4);
+        }
+        
+        .admin-link:hover::before {
+            left: 0;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(12, 255, 225, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(12, 255, 225, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(12, 255, 225, 0); }
+        }
+        
+        .cyber-line {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            margin: 30px 0;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2em;
+            }
+            
+            .container {
+                padding: 30px 20px;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        .particle {
+            position: absolute;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 15s infinite linear;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100vw);
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -359,7 +530,7 @@ function getHomePage() {
     <div class="container">
         <h1>🔗 短网址服务</h1>
         <p class="subtitle">快速、安全、可靠的短链接服务</p>
-
+        
         <div class="features">
             <div class="feature">
                 <h3>⚡ 快速访问</h3>
@@ -378,9 +549,10 @@ function getHomePage() {
                 <p>可视化后台，轻松管理所有短链接</p>
             </div>
         </div>
-
+        
         <a href="/admin" class="admin-link">进入管理后台</a>
     </div>
+
 </body>
 </html>`;
 }
@@ -394,180 +566,371 @@ function getAdminPage() {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>短网址管理后台</title>
     <style>
+        :root {
+            --primary: #0cffe1;
+            --secondary: #5271ff;
+            --accent: #ff2a6d;
+            --dark: #0a1128;
+            --darker: #050a1d;
+            --light: #d0fef5;
+            --card-bg: rgba(16, 18, 46, 0.7);
+            --glow: 0 0 10px var(--primary), 0 0 20px rgba(12, 255, 225, 0.3);
+        }
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            background: #f5f7fa;
-            color: #333;
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--darker);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(18, 44, 120, 0.5) 0%, transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(82, 113, 255, 0.4) 0%, transparent 25%),
+                radial-gradient(circle at 50% 80%, rgba(255, 42, 109, 0.3) 0%, transparent 25%);
+            color: #fff;
+            min-height: 100vh;
+            line-height: 1.6;
         }
+        
+        .cyber-border {
+            position: relative;
+            border: 1px solid var(--primary);
+            box-shadow: var(--glow);
+            border-radius: 8px;
+            background: var(--card-bg);
+            overflow: hidden;
+        }
+        
+        .cyber-border::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 4px;
+            border-top: 2px solid var(--primary);
+            border-left: 2px solid var(--primary);
+            box-shadow: var(--glow);
+        }
+        
+        .cyber-border::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 4px;
+            height: 4px;
+            border-bottom: 2px solid var(--primary);
+            border-right: 2px solid var(--primary);
+            box-shadow: var(--glow);
+        }
+        
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: rgba(10, 17, 40, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(12, 255, 225, 0.3);
             padding: 20px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
+        
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
         }
+        
         .header h1 {
+            font-family: 'Orbitron', sans-serif;
             text-align: center;
-            font-weight: 300;
-            font-size: 2em;
+            font-weight: 700;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(12, 255, 225, 0.5);
+            letter-spacing: 1px;
         }
+        
         .main {
             padding: 40px 20px;
             max-width: 1200px;
             margin: 0 auto;
         }
+        
         .create-form {
-            background: white;
             padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(5px);
         }
+        
+        .create-form h2 {
+            margin-bottom: 25px; 
+            color: var(--primary); 
+            font-family: 'Orbitron', sans-serif;
+        }
+        
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            position: relative;
         }
+        
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             font-weight: 500;
-            color: #555;
+            color: var(--light);
+            font-size: 1.1em;
         }
+        
         input[type="url"], input[type="text"] {
             width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(12, 255, 225, 0.3);
+            border-radius: 6px;
             font-size: 16px;
-            transition: border-color 0.3s;
+            color: white;
+            transition: all 0.3s ease;
         }
+        
         input[type="url"]:focus, input[type="text"]:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--primary);
+            box-shadow: var(--glow);
+            background: rgba(255, 255, 255, 0.12);
         }
+        
         .btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            padding: 12px 25px;
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+            color: var(--darker);
+            padding: 14px 30px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 16px;
             font-weight: 500;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
         }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            transition: all 0.4s ease;
+            z-index: -1;
+        }
+        
         .btn:hover {
-            transform: translateY(-1px);
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(12, 255, 225, 0.4);
         }
+        
+        .btn:hover::before {
+            left: 0;
+        }
+        
         .btn-small {
-            padding: 6px 12px;
+            padding: 8px 16px;
             font-size: 14px;
             margin: 0 5px;
         }
+        
         .btn-danger {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            background: linear-gradient(45deg, #ff2a6d, #ff5e00);
         }
+        
         .btn-info {
-            background: linear-gradient(45deg, #3742fa, #2f3542);
+            background: linear-gradient(45deg, #5271ff, #8c52ff);
         }
+        
         .urls-list {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
             overflow: hidden;
         }
+        
         .urls-header {
-            background: #f8f9fa;
-            padding: 20px 30px;
-            border-bottom: 1px solid #e9ecef;
+            padding: 25px 30px;
+            border-bottom: 1px solid rgba(12, 255, 225, 0.3);
         }
+        
         .urls-header h2 {
-            color: #333;
+            color: var(--primary);
             font-weight: 500;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8em;
         }
+        
         .url-item {
-            padding: 20px 30px;
-            border-bottom: 1px solid #f1f3f4;
-            transition: background-color 0.2s;
+            padding: 25px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
         }
+        
         .url-item:hover {
-            background-color: #f8f9fa;
+            background: rgba(12, 255, 225, 0.05);
         }
+        
         .url-item:last-child {
             border-bottom: none;
         }
+        
         .url-info {
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
+        
         .short-url {
             font-weight: 600;
-            color: #667eea;
-            font-size: 18px;
-        }
-        .original-url {
-            color: #666;
-            margin: 5px 0;
-            word-break: break-all;
-        }
-        .url-meta {
-            font-size: 14px;
-            color: #888;
-            margin-bottom: 10px;
-        }
-        .url-actions {
+            color: var(--primary);
+            font-size: 1.3em;
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 8px;
             display: flex;
-            gap: 10px;
+            align-items: center;
             flex-wrap: wrap;
         }
+        
+        .original-url {
+            color: rgba(255, 255, 255, 0.7);
+            margin: 10px 0;
+            word-break: break-all;
+            font-size: 0.95em;
+        }
+        
+        .url-meta {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .url-actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
         .stats {
-            display: inline-block;
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 4px 8px;
+            display: inline-flex;
+            align-items: center;
+            background: rgba(12, 255, 225, 0.1);
+            color: var(--primary);
+            padding: 6px 12px;
             border-radius: 4px;
             font-size: 12px;
             font-weight: 500;
+            border: 1px solid rgba(12, 255, 225, 0.2);
         }
+        
         .loading {
             text-align: center;
-            padding: 40px;
-            color: #666;
+            padding: 50px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.2em;
         }
+        
         .error {
-            background: #ffebee;
-            color: #c62828;
-            padding: 10px 15px;
+            background: rgba(255, 42, 109, 0.15);
+            color: #ff2a6d;
+            padding: 12px 18px;
             border-radius: 8px;
-            margin: 10px 0;
+            margin: 15px 0;
+            border: 1px solid rgba(255, 42, 109, 0.3);
         }
+        
         .success {
-            background: #e8f5e8;
-            color: #2e7d32;
-            padding: 10px 15px;
+            background: rgba(12, 255, 225, 0.15);
+            color: var(--primary);
+            padding: 12px 18px;
             border-radius: 8px;
-            margin: 10px 0;
+            margin: 15px 0;
+            border: 1px solid rgba(12, 255, 225, 0.3);
         }
+        
         .copy-btn {
-            background: #28a745;
+            background: rgba(12, 255, 225, 0.2);
+            color: var(--primary);
+            border: 1px solid var(--primary);
             font-size: 12px;
-            padding: 4px 8px;
-            margin-left: 10px;
+            padding: 6px 12px;
+            margin-left: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
+        
+        .copy-btn:hover {
+            background: rgba(12, 255, 225, 0.3);
+            box-shadow: 0 0 8px var(--primary);
+        }
+        
         @media (max-width: 768px) {
             .url-actions {
                 flex-direction: column;
             }
+            
             .btn-small {
-                margin: 2px 0;
+                margin: 5px 0;
             }
+            
+            .url-meta {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+        
+        .cyber-loader {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            border: 3px solid var(--primary);
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            box-shadow: 0 0 10px var(--primary);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(12, 255, 225, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(12, 255, 225, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(12, 255, 225, 0); }
+        }
+        
+        .cyber-line {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            margin: 15px 0;
+            opacity: 0.5;
         }
     </style>
 </head>
@@ -639,9 +1002,9 @@ function getAdminPage() {
             try {
                 const response = await fetch('/api/urls');
                 const urls = await response.json();
-
+                
                 const urlsList = document.getElementById('urlsList');
-
+                
                 if (urls.length === 0) {
                     urlsList.innerHTML = '<div class="loading">暂无短链接</div>';
                     return;
@@ -681,10 +1044,10 @@ function getAdminPage() {
         // 创建短链
         document.getElementById('createForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-
+            
             const originalUrl = document.getElementById('originalUrl').value;
             const customCode = document.getElementById('customCode').value;
-
+            
             try {
                 const response = await fetch('/api/urls', {
                     method: 'POST',
@@ -696,9 +1059,9 @@ function getAdminPage() {
                         customCode: customCode || undefined
                     })
                 });
-
+                
                 const result = await response.json();
-
+                
                 if (response.ok) {
                     showMessage(\`短链接创建成功！短码: \${result.shortCode}\`);
                     document.getElementById('createForm').reset();
@@ -714,12 +1077,12 @@ function getAdminPage() {
         // 删除URL
         async function deleteUrl(code) {
             if (!confirm('确定要删除这个短链接吗？')) return;
-
+            
             try {
                 const response = await fetch(\`/api/urls/\${code}\`, {
                     method: 'DELETE'
                 });
-
+                
                 if (response.ok) {
                     showMessage('删除成功！');
                     loadUrls();
@@ -735,7 +1098,7 @@ function getAdminPage() {
         function editUrl(code, currentUrl) {
             const newUrl = prompt('请输入新的网址:', currentUrl);
             if (!newUrl || newUrl === currentUrl) return;
-
+            
             updateUrl(code, newUrl);
         }
 
@@ -751,7 +1114,7 @@ function getAdminPage() {
                         originalUrl: newUrl
                     })
                 });
-
+                
                 if (response.ok) {
                     showMessage('更新成功！');
                     loadUrls();
